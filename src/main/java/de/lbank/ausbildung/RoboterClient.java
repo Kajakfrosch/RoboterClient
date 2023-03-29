@@ -3,7 +3,7 @@ package de.lbank.ausbildung;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
-import org.jetbrains.annotations.NotNull;
+
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -122,8 +122,8 @@ public class RoboterClient extends Thread{
         String text = "";
         Double datax = Math.random() * 10;
         Double datay = Math.random() * 10;
-        Double newDatax = new Double(datax);
-        Double newDatay = new Double(datay);
+        Double newDatax = Double.valueOf(datax);
+        Double newDatay = Double.valueOf(datax);
         int x = newDatax.intValue();
         int y = newDatay.intValue();
         int maxHeight = size.getHeight();
@@ -133,8 +133,8 @@ public class RoboterClient extends Thread{
             datay = Math.random() * 10;
             newDatax = null;
             newDatay = null;
-            newDatax = new Double(datax);
-            newDatay = new Double(datay);
+            newDatax = Double.valueOf(datax);
+            newDatax = Double.valueOf(datax);
             x = newDatax.intValue();
             y = newDatay.intValue();
 
@@ -155,7 +155,7 @@ public class RoboterClient extends Thread{
         
       return pos;
     };
-    public Position generatenewPosition(@NotNull Position pos, int step) {
+    public Position generatenewPosition(Position pos, int step) {
         int x = pos.getX();
         int y = pos.getY();
         Direction direction = pos.getDir();
