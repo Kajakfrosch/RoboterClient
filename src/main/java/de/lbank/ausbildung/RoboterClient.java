@@ -12,9 +12,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 
 public class RoboterClient extends Thread{
-    private static String robotname = "Namour";
-    private static int x = 1;
-    private static int y = 1;
+    private  String robotname = "Namour";
     private Position position;
     private boolean gelandet = false;
     private Measure measure;
@@ -29,6 +27,10 @@ public class RoboterClient extends Thread{
     private RoboterClient q;
     private Position mylandingpos;
     private Receiver2base base;
+    public RoboterClient(String robotname){
+        this.robotname = robotname;
+        startAction();
+    }
     public boolean startAction() {
         //robotname = robotname + (Math.random()*10);
         r = new Receiver(robotname, "127.0.0.1", port);
