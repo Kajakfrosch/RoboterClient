@@ -3,6 +3,7 @@ package de.lbank.ausbildung;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -29,8 +30,9 @@ public class RoboterClient extends Thread{
     private Position mylandingpos;
     private Receiver2base base;
     public boolean startAction() {
+        //robotname = robotname + (Math.random()*10);
         r = new Receiver(robotname, "127.0.0.1", port);
-        base = new Receiver2base(robotname, "127.0.0.1", 1222);
+        base = new Receiver2base(robotname, "127.0.0.1", 6000);
         measure = new Measure();
         p = new ExoplanetParser();
         q = this;
@@ -52,10 +54,12 @@ public class RoboterClient extends Thread{
 
             size = (Size) p.parse(text);
 
-            sendtexttobase("initworld|pandora|" + size.getHeight() + "|" + size.getWidth() + "|" + robotname);
+            sendtexttobase("initworld|pandora|" + size.getWidth() + "|" +  size.getHeight()+ "|" + robotname);
             mylandingpos = generateLandingPosition(size);
             sendtexttoExo(p.createLandJson(mylandingpos.getX(), mylandingpos.getY(),mylandingpos.getDir().toString() ));
             gelandet = true;
+            text = listen2exo();
+            System.out.println("INFO:"+text);
         }else {
             System.out.println("der Roboter ist schon gelandet");
         }
@@ -63,8 +67,8 @@ public class RoboterClient extends Thread{
     };
     public void ablauf(){
         startlanding();
-        move();
         genMessdaten();
+        move();
     }
     public void run(){
         while (!Thread.currentThread().isInterrupted()){
@@ -72,20 +76,40 @@ public class RoboterClient extends Thread{
             ablauf();
         }catch (Exception e){
             e.printStackTrace();
+            gelandet = false;
+            p.createExitJson();
+            System.out.println("Bei der verarbeitung ist ein Fehler aufgetreten");
+            stopAction();
         }
         ;}
     }
     public void move(){
         mylandingpos = generatenewPosition(mylandingpos, 1);
         sendtexttoExo(p.createMoveJson());
+
         sendtexttobase("updateKoordinaten|"+mylandingpos.getX()+"|"+mylandingpos.getY()+"|"+robotname+"|"+mylandingpos.getDir().toString()+"|"+"alive");
+       // String test =listen2exo();
+        String text =listen2exo();
+        try {
+            String text2 = (String) p.parse(text);
+            if (text2.equalsIgnoreCase("crashed")){
+                stopAction();
+            }
+        }catch (Exception e){
+
+        }
+
 
     }
     public void genMessdaten(){
         sendtexttoExo(p.createScanJson());
         String text = listen2exo();
-        measure= (Measure) p.parse(text);
-        sendtexttobase("saveMessdaten|"+ mylandingpos.getX()+"|"+mylandingpos.getY()+"|"+robotname+"|"+measure.getTemperature()+"|"+ measure.getGround());
+
+            measure = (Measure) p.parse(text);
+            sendtexttobase("saveMessdaten|" + mylandingpos.getX() + "|" + mylandingpos.getY() + "|" + robotname + "|" + measure.getTemperature() + "|" + measure.getGround());
+
+            //e.printStackTrace();
+
     }
     public void exit(){
         sendtexttoExo(p.createExitJson());
@@ -94,8 +118,26 @@ public class RoboterClient extends Thread{
     }
     public Position generateLandingPosition(Size size){
         String text = "";
-        int x = 1;
-        int y = 1;
+        Double datax = Math.random() * 10;
+        Double datay = Math.random() * 10;
+        Double newDatax = new Double(datax);
+        Double newDatay = new Double(datay);
+        int x = newDatax.intValue();
+        int y = newDatay.intValue();
+        int maxHeight = size.getHeight();
+        int maxWidth = size.getWidth();
+        while (!(x <=size.getWidth()) || !(y <= size.getHeight())){
+            datax = Math.random() * 10;
+            datay = Math.random() * 10;
+            newDatax = null;
+            newDatay = null;
+            newDatax = new Double(datax);
+            newDatay = new Double(datay);
+            x = newDatax.intValue();
+            y = newDatay.intValue();
+
+
+        }
         Position pos = null;
         while (!text.equalsIgnoreCase("1005")){
         sendtexttobase("isChunkFree|"+(size.getHeight()-x)+"|"+(size.getHeight()-y)+"|"+robotname);
@@ -104,14 +146,14 @@ public class RoboterClient extends Thread{
                 x = x + 1;
                 y = y + 1;
             }else {
-                pos = new Position(size.getHeight()-x,size.getWidth()-y,Direction.valueOf("SOUTH"));
+                pos = new Position(size.getWidth()-x,(size.getHeight()-y),Direction.EAST);
             };
         }
         
         
       return pos;
     };
-    public Position generatenewPosition(Position pos, int step) {
+    public Position generatenewPosition(@NotNull Position pos, int step) {
         int x = pos.getX();
         int y = pos.getY();
         Direction direction = pos.getDir();
@@ -119,37 +161,73 @@ public class RoboterClient extends Thread{
         int maxWidth = size.getWidth();
         String text = "";
         do {
-            if (pos.getDir().toString().equals("EAST") && x + step <= maxHeight) {
+            if (pos.getDir().toString().equals("EAST") && x + step <= maxWidth) {
                 x += step; // Nach EAST gehen
             } else if (pos.getDir().toString().equals("WEST") && x - step >= 0) {
                 x -= step; // Nach WEST gehen
-            } else if (pos.getDir().toString().equals("SOUTH") && y + step <= maxWidth) {
+            } else if (pos.getDir().toString().equals("NORTH") && y + step <= maxHeight) {
                 y += step; // Nach SOUTH gehen
-            } else if (pos.getDir().toString().equals("NORTH") && y - step >= 0) {
+            } else if (pos.getDir().toString().equals("SOUTH") && y - step >= 0) {
                 y -= step; // Nach NORTH gehen
             }
             if (x >= 0 && x <= maxWidth && y >= 0 && y <= maxWidth) {
                 sendtexttobase("isChunkFree|" + x + "|" + y + "|" + robotname);
                 text = listen2base();
                 if(!text.equalsIgnoreCase("1005")){
-                    pos.setDir(Direction.valueOf(getRandomDirection()));
-                    sendtexttoExo(p.createRotateJson(pos.getDir().toString()));
+                    pos.setDir(getRandomDirection(pos.getDir(),"Right"));
+
+                    sendtexttoExo(p.createRotateJson("RIGHT"));
+                    listen2exo();
 
                 }
+
+
             }
         } while (!text.equalsIgnoreCase("1005"));
-
+        pos.setX(x);
+        pos.setY(y);
         return pos;
     }
     ;
-    public String getRandomDirection() {
-        int rand = (int) (Math.random() * 4); // Zufällige Zahl zwischen 0 und 3 generieren
-        String[] directions = {"NORTH", "SOUTH", "WEST", "EAST"}; // Array mit den 4 Richtungen
-        return directions[rand]; // Zufällige Richtung zurückgeben
+    public Direction getRandomDirection(Direction d,String richtung) {
+        switch (d.toString()){
+            case "NORTH":
+                if(richtung.equalsIgnoreCase("left")){
+                    return Direction.WEST;
+                }
+                if (richtung.equalsIgnoreCase("right")) {
+                    return Direction.EAST;
+                }
+
+            case "EAST":
+                if(richtung.equalsIgnoreCase("left")){
+                    return Direction.NORTH;
+                }
+                if (richtung.equalsIgnoreCase("right")) {
+                    return Direction.SOUTH;
+                }
+            case "SOUTH":
+                if(richtung.equalsIgnoreCase("left")){
+                    return Direction.EAST;
+                }
+                if (richtung.equalsIgnoreCase("right")) {
+                    return Direction.WEST;
+                }
+            case "WEST":
+                if(richtung.equalsIgnoreCase("left")){
+                    return Direction.SOUTH;
+                }
+                if (richtung.equalsIgnoreCase("right")) {
+                    return Direction.NORTH;
+                }
+        }
+        return Direction.WEST;
     }
     public boolean stopAction() {
+        sendtexttobase("crashedRoboter|"+robotname);
         base.interrupt();
         r.interrupt();
+        this.interrupt();
         if (r.isAlive()&&base.isAlive()) {
             return false;
         }
@@ -196,7 +274,7 @@ public class RoboterClient extends Thread{
                 boolean done = false;
 
                 String line;
-                while ((line = in.readLine()) != null || line.equalsIgnoreCase("/n")) {
+                while ((line = in.readLine()) != null ) {
                     System.out.println(line);
                     return line;
                 }

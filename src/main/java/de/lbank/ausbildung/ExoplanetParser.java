@@ -14,7 +14,9 @@ public class ExoplanetParser {
     public Object parse(String json) {
         JsonElement element = parser.parse(json);
         if (!element.isJsonObject()) {
+            System.out.println(element.getAsString());
             throw new IllegalArgumentException("Invalid JSON format");
+
         }
         JsonObject obj = element.getAsJsonObject();
         String cmd = obj.get("CMD").getAsString();
@@ -62,6 +64,9 @@ public class ExoplanetParser {
             case "error":
                 String error = obj.get("ERROR").getAsString();
                 return error;
+
+            case "crashed":
+                return "crashed";
             case "pos":
                 position = obj.get("POSITION").getAsJsonObject();
                 x = position.get("X").getAsInt();

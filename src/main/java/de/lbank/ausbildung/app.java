@@ -9,8 +9,9 @@ public class app {
         r.startAction();
 
         while(!t.next().equalsIgnoreCase("exit")){
+
             System.out.println("Roboterläuft");
-            t.next();
+
         }
         r.stopAction();
     }
