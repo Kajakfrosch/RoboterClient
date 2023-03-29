@@ -4,11 +4,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class RoboterClientTest {
-    private final RoboterClient client = new RoboterClient();
+    private final RoboterClient client = new RoboterClient("namor","127.0.0.1","127.0.0.1");
 
     @Test
     void testStartAction() {
-        Assertions.assertTrue(client.startAction());
+        Assertions.assertTrue(client.startAction("127.0.0.1","127.0.0.1"));
     }
 
     @Test

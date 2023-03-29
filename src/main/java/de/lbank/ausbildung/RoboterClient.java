@@ -27,11 +27,11 @@ public class RoboterClient extends Thread{
     private RoboterClient q;
     private Position mylandingpos;
     private Receiver2base base;
-    public RoboterClient(String robotname){
+    public RoboterClient(String robotname,String baseip,String exoip){
         this.robotname = robotname;
-        startAction();
+        startAction(baseip,exoip);
     }
-    public boolean startAction() {
+    public boolean startAction(String baseip,String exoip) {
         //robotname = robotname + (Math.random()*10);
         r = new Receiver(robotname, "127.0.0.1", port);
         base = new Receiver2base(robotname, "127.0.0.1", 6000);
